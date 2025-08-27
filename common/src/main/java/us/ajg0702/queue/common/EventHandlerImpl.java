@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 public class EventHandlerImpl implements EventHandler {
 
+    private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
     final QueueMain main;
     CommunicationManager communicationManager;
     public EventHandlerImpl(QueueMain main) {
@@ -77,10 +78,8 @@ public class EventHandlerImpl implements EventHandler {
         QueueCommand.cooldowns.remove(player);
         main.serverTimeManager.removePlayer(player);
 
-        List<String> changedKeys = recentlyChanged.keySet().stream()
-                .filter(k -> k.startsWith(player.getUniqueId().toString()))
-                .collect(Collectors.toList());
-        changedKeys.forEach(recentlyChanged::remove);
+        // Clear recent queue server changes for player
+        recentlyChanged.keySet().removeIf(k -> k.startsWith(player.getUniqueId().toString()));
     }
 
     @Override
@@ -146,7 +145,7 @@ public class EventHandlerImpl implements EventHandler {
 
         if(!player.isConnected()) return;
 
-        String plainReason = PlainTextComponentSerializer.plainText().serialize(reason);
+        String plainReason = PLAIN.serialize(reason);
         
         Debug.info(player.getName()+" kicked! Moving: "+moving+" from: "+from.getName()+" plainReason: "+plainReason    );
 
@@ -157,10 +156,12 @@ public class EventHandlerImpl implements EventHandler {
         ImmutableList<QueueServer> queuedServers = main.getQueueManager().getPlayerQueues(player);
         if(!queuedServers.contains(main.getQueueManager().findServer(from.getName())) && main.getConfig().getBoolean("auto-add-to-queue-on-kick")) {
 
+            // Determine if player should be auto added to a queue based on kick reason
             List<String> reasons = main.getConfig().getStringList("auto-add-kick-reasons");
             boolean shouldqueue = false;
-            for(String kickReason : reasons) {
-                if(plainReason.toLowerCase().contains(kickReason.toLowerCase())) {
+            String reasonLower = plainReason.toLowerCase();
+            for (String kickReason : reasons) {
+                if (reasonLower.contains(kickReason.toLowerCase())) {
                     shouldqueue = true;
                     break;
                 }
