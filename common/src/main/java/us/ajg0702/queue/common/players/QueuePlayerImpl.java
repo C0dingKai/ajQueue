@@ -114,8 +114,7 @@ public class QueuePlayerImpl implements QueuePlayer {
         return initialServer;
     }
 
-
-    private long leaveTime = 0;
+    private long leaveTime;
     public void setLeaveTime(long leaveTime) {
         this.leaveTime = leaveTime;
     }
